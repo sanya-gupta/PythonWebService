@@ -11,8 +11,11 @@
 
 # This is where you import libraries (called Modules in Python)
 from flask import Flask, request, jsonify, json
+from operator import itemgetter
 import csv
 import json
+
+from collections import OrderedDict
 # This designates this file as a Flask Application
 app = Flask(__name__)
 
@@ -29,8 +32,8 @@ def ReadFile():
             # ourArray = list( reader )
         for row in reader:
             array.append( row )
-            print( row )
-            print( row[ "name" ], row[ "email" ], row[ "score" ] )
+            #print( row )
+            #print( row[ "name" ], row[ "email" ], row[ "score" ] )
         r = json.dumps( array )
         return r
 
@@ -52,80 +55,84 @@ def CreateEntry():
         #create writer object
         writer = csv.writer( csvfile )
         writer.writerows( postData )
+
  
-    return "POST complete"
+    return "POST COMPLETE"
 
 @app.route('/Update/', methods=['PUT'])
 def UpdateFile():
+    max = 10
+    myFlag = False
     JSON = request.get_json()
+    RankList = []
+    '''
+    Ranking = JSON["Rankings"]
+    RankList = []
+    for i in Ranking:
+        Name = i[ "Name" ]
+        Email = i[ "Unique Email" ]
+        Score = i[ "Score" ]
+        Row = [ Name,Email,Score]
+        RankList.append(Row) '''
     Name = JSON[ "Name" ]
     Email = JSON[ "Unique Email" ]
     Score = JSON[ "Score" ]
-    print( Name, Email, Score )
-   
-   data = {
-           "Rankings":[
-            {
-                       "Name": "Sanya",
-                       "Unique Email": "sgupta@nevada.unr.edu",
-                       "Score": 120
-            },
-            {
-                       "Name": "Ryan",
-                       "Unique Email": "ryan@gmail.com",
-                       "Score": 0
-            },
-            {
-                       "Name": "Vinh",
-                       "Unique Email": "vinh@unr.edu",
-                       "Score": 150
-            },
-            {
-                       "Name": "Connor",
-                       "Unique Email": "connor@unr.edu",
-                       "Score": 149
-            },
-            {
-                       "Name": "Hannah",
-                       "Unique Email": "hannah@unr.edu",
-                       "Score": 200
-            },
-            {
-                       "Name": "Jervyn",
-                       "Unique Email": "jervyn@unr.edu",
-                       "Score": 122
-            },
-            {
-                       "Name": "Sven",
-                       "Unique Email": "sven@unr.edu",
-                       "Score": -100
-            },
-            {
-                       "Name": "Jake",
-                       "Unique Email": "jake@unr.edu",
-                       "Score": 100
-            },
-            {
-                       "Name": "Helen",
-                       "Uniqure Email": "helen@unr.edu",
-                       "Score": 175
-            },
-            {
-                       "Name": "Pat",
-                       "Unique Email": "pat@unr.edu",
-                       "Score": 120
-            }
-   ]
-}
-    
-    jsonData = json.dumps(data)
-    print(jsonData)
-   
-    with open ( 'list.csv', 'w' ) as csvfile:
-        json.dump(data,)
-    
-    
-    return "Crap needs updating, yo"
+            
+    #read in the file
+    with open( 'list.csv' ) as csvfile:
+        reader = csv.DictReader( csvfile )
+        for row in reader:
+            RankList.append( dict(row) )
+
+    lenList = len( RankList )
+    print(lenList)
+    print(RankList)
+
+    for i in RankList:
+        ListName = i[ "Name" ]
+        ListEmail = i[ "Unique Email" ]
+        ListScore = i[ "Score" ]
+        print( Name, Email, Score )
+        if not myFlag :
+            if ( Email == ListEmail ) :
+                if ( int(Score) > int(ListScore)) :
+                    print( Score )
+                    #print(ListScore)
+                else:
+                        #do nothing
+                    print( "Else reached" )
+            else:
+                if ( int( Score ) > int(ListScore) ):
+                    
+                    if( lenList < max ):
+                        temp = { "Name": Name, "Unique Email": Email, "Score": Score }
+                        RankList.append(temp)
+                        print( "check the list" )
+                        myFlag = True
+                    else:
+                        #sort list and append to appropiate spot
+                        #clip the last spot
+                        temp = { "Name": Name, "Unique Email": Email, "Score": Score }
+                        RankList.append(temp)
+                        print( Score, '\n',"Email wasn't in the system yet" )
+                        myFlag = True
+
+
+    for item in RankList:
+        print(item)
+    RankList = RankList[:-1]
+    RankList = sorted(RankList, key=lambda Ranks: int(Ranks['Score']), reverse = True)
+
+#writes list of dictionaries to a csv type of file
+    with open('list.csv', 'w') as csvfile:
+        fieldnames = ['Name', 'Unique Email', 'Score']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(RankList)
+
+
+    return "PUT COMPLETE"
+
 
 @app.route('/Delete/', methods=['DELETE'])
 def DeleteEverything():
